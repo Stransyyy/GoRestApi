@@ -1,43 +1,61 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
 	"net/http"
+	"time"
 
-	firebase "firebase.google.com/go"
-	"github.com/gorilla/mux"
-	"google.golang.org/api/option"
+	"github.com/gin-gonic/gin"
 )
 
+type resp struct {
+	Title string    `json:"title"`
+	Msg   string    `json:"msg"`
+	TS    time.Time `json:"ts"`
+}
+
+var mensajes = []resp{
+	{
+		Title: "Hello",
+		Msg:   "Hello, World!",
+		TS:    time.Now(),
+	},
+	{
+		Title: "This is a test of a web service",
+		Msg:   "This is a test of a web service",
+		TS:    time.Unix(0, 0),
+	},
+}
+
 func main() {
-	// Initialize Firebase
-	ctx = context.Background()
-	opt := option.WithCredentialsFile(firebaseConfigFile)
-	app, err := firebase.NewApp(ctx, nil, opt)
-	if err != nil {
-		log.Fatalf("Firebase initialization error: %v\n", err)
+
+	r := gin.Default()
+
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "pong"})
+
+	})
+
+	r.GET("/mensajes", GetMensajes)
+	r.POST("/mensajes", postMensaje)
+
+	r.Run("localhost:8080")
+
+}
+
+func GetMensajes(c *gin.Context) {
+	c.JSON(http.StatusOK, mensajes)
+}
+
+func postMensaje(c *gin.Context) {
+	var newMessaje resp
+
+	// Call BindJSON to bind the received JSON to
+	// newAlbum.
+	if err := c.BindJSON(&newMessaje); err != nil {
+		return
 	}
 
-	// Initialize Firestore
-	client, err := app.DatabaseWithURL(ctx, firebaseDBURL)
-	if err != nil {
-		log.Fatalf("Firestore initialization error: %v\n", err)
-	}
-
-	// Initialize the Router
-	router := mux.NewRouter()
-
-	// Define API routes (e.g., /api/books)
-	router.HandleFunc("/api/books", getBooks).Methods("GET")
-	router.HandleFunc("/api/books/{id}", getBook).Methods("GET")
-	router.HandleFunc("/api/books", createBook).Methods("POST")
-	router.HandleFunc("/api/books/{id}", updateBook).Methods("PUT")
-	router.HandleFunc("/api/books/{id}", deleteBook).Methods("DELETE")
-
-	// Start the API server
-	port := ":8080"
-	fmt.Printf("Server is running on port %s...\n", port)
-	log.Fatal(http.ListenAndServe(port, router))
+	// Add the new album to the slice.
+	mensajes = append(mensajes, newMessaje)
+	c.IndentedJSON(http.StatusCreated, newMessaje)
 }
