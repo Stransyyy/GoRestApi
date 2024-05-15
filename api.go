@@ -45,7 +45,7 @@ func (s *APIserver) Run() error {
 
 	router.HandleFunc("/account", makeHTTPHandlefunc(s.handleAccount))
 
-	log.Println("JSON API SERVER RUNNIN ON PORT: ", s.listenAddr)
+	log.Println("JSON API SERVER RUNNIN ON PORT", s.listenAddr)
 
 	http.ListenAndServe(s.listenAddr, router)
 
