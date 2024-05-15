@@ -2,12 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
+// WriteJson writes a JSON response with the given status code and data.
 func writeJSON(w http.ResponseWriter, statusCode int, v any) error {
 	w.WriteHeader(statusCode)
 	w.Header().Set("Content-Type", "application/json")
@@ -44,6 +46,7 @@ func (s *APIserver) Run() error {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/account", makeHTTPHandlefunc(s.handleAccount))
+	router.HandleFunc("/account/{id}", makeHTTPHandlefunc(s.handleGetAccount))
 
 	log.Println("JSON API SERVER RUNNIN ON PORT", s.listenAddr)
 
@@ -69,8 +72,12 @@ func (s *APIserver) handleAccount(w http.ResponseWriter, r *http.Request) error 
 }
 
 func (s *APIserver) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
+	id := mux.Vars(r)["id"]
 
-	return nil
+	//account := NewAccount("John", "Doe")
+	fmt.Println(id)
+
+	return writeJSON(w, http.StatusOK, &Account{})
 }
 
 func (s *APIserver) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
