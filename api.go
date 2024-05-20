@@ -10,35 +10,16 @@ import (
 )
 
 // WriteJson writes a JSON response with the given status code and data.
-func writeJSON(w http.ResponseWriter, statusCode int, v any) error {
-	w.WriteHeader(statusCode)
-	w.Header().Set("Content-Type", "application/json")
-
-	return json.NewEncoder(w).Encode(v)
-}
-
-type apifunc func(http.ResponseWriter, *http.Request) error
-
-type ApiError struct {
-	Error string
-}
-
-func makeHTTPHandlefunc(f apifunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := f(w, r); err != nil {
-			writeJSON(w, http.StatusBadRequest, ApiError{Error: err.Error()})
-		}
-	}
-
-}
 
 type APIserver struct {
 	listenAddr string
+	store      Storage
 }
 
-func NewAPIserver(listenAddr string) *APIserver {
+func NewAPIserver(listenAddr string, store Storage) *APIserver {
 	return &APIserver{
 		listenAddr: listenAddr,
+		store:      store,
 	}
 }
 
@@ -48,7 +29,7 @@ func (s *APIserver) Run() error {
 	router.HandleFunc("/account", makeHTTPHandlefunc(s.handleAccount))
 	router.HandleFunc("/account/{id}", makeHTTPHandlefunc(s.handleGetAccount))
 
-	log.Println("JSON API SERVER RUNNIN ON PORT", s.listenAddr)
+	log.Println("JSON API SERVER RUNNING ON PORT", s.listenAddr)
 
 	http.ListenAndServe(s.listenAddr, router)
 
@@ -91,4 +72,26 @@ func (s *APIserver) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 func (s *APIserver) handleTransaction(w http.ResponseWriter, r *http.Request) error {
 
 	return nil
+}
+
+func writeJSON(w http.ResponseWriter, statusCode int, v any) error {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	return json.NewEncoder(w).Encode(v)
+}
+
+type apifunc func(http.ResponseWriter, *http.Request) error
+
+type ApiError struct {
+	Error string
+}
+
+func makeHTTPHandlefunc(f apifunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := f(w, r); err != nil {
+			writeJSON(w, http.StatusBadRequest, ApiError{Error: err.Error()})
+		}
+	}
+
 }
